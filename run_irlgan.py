@@ -5,10 +5,10 @@ try:
     import gym_extensions
 except:
     print("no gym extensions")
-try:
-    import roboschool
-except:
-    print("no roboschool")
+# try:
+#     import roboschool
+# except:
+#     print("no roboschool")
 from pgbox.utils import *
 from pgbox.trpo.model import *
 import argparse
@@ -23,10 +23,11 @@ from pgbox.valuefunctions.nn_vf import *
 
 from pgbox.sampling_utils import apply_transformers
 
+
 parser = argparse.ArgumentParser(description='TRPO.')
 # these parameters should stay the same
-parser.add_argument("task", type=str)
-parser.add_argument("expert_rollouts_path", type=str)
+parser.add_argument("--task", type=str, default='Hopper-v2')
+parser.add_argument("--expert_rollouts_path", type=str, default='./data/Hopper-v2_data_10_rollouts.pkl')
 parser.add_argument("--num_expert_rollouts", type=int, default=10)
 parser.add_argument("--timesteps_per_batch", type=int, default=25000)
 parser.add_argument("--n_iters", type=int, default=500)
@@ -46,11 +47,10 @@ parser.add_argument("--concat_prev_timestep", action="store_true")
 parser.add_argument("--use_ppo", action="store_true")
 parser.add_argument("--d_l2_penalty_weight", default=0.0, type=float)
 
-
 args = parser.parse_args()
 
-logger.add_text_output(args.log_dir + "debug.log")
-logger.add_tabular_output(args.log_dir + "progress.csv")
+# logger.add_text_output(args.log_dir + "debug.log")
+# logger.add_tabular_output(args.log_dir + "progress.csv")
 
 learner_env = gym.make(args.task)
 
@@ -72,13 +72,15 @@ print(args.discriminator_size)
 policy = GaussianMLPPolicy(learner_env, hidden_sizes=args.policy_size, activation=tf.nn.tanh)
 baseline = MLPValueFunction(learner_env, hidden_sizes=args.policy_size, activation=tf.nn.tanh)
 
+print(args.use_ppo)
+
 if args.use_ppo:
     trpo = ParallelPPO(learner_env, policy, args, vf=baseline)
 else:
     trpo = ParallelTRPO(learner_env, policy, args, vf=baseline)
 discriminator = MLPDiscriminator(learner_env.observation_space.shape[0], hidden_sizes=args.discriminator_size, activation=tf.nn.tanh, learning_rate=args.discriminator_lr, l2_penalty_weight=args.d_l2_penalty_weight)
 
-trainer = ParallelTrainer(learner_env, trpo, expert_rollouts, discriminator, policy, args)
+trainer = ParallelTrainer(trpo, expert_rollouts, discriminator, policy, args)
 
 iterations = 0
 while iterations <= args.n_iters:

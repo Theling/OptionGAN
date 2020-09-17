@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import gym
 import gym_extensions
-from gym_extensions.wrappers.normalized_env import normalize
+# from gym_extensions.wrappers.normalized_env import normalize
 from pgbox.utils import *
 from pgbox.trpo.model import *
 import argparse
@@ -13,7 +13,7 @@ from pgbox.policies.gated_gaussian_mlp_policy import *
 from irlbox.utils import load_expert_rollouts
 from irlbox.irlgan.trainer import ParallelTrainer
 from irlbox.discriminators.mlp_gated_discriminator import OptionatedMLPDiscriminator
-import roboschool
+# import roboschool
 from pgbox.valuefunctions.nn_vf import *
 from pgbox.sampling_utils import rollout
 import pickle
@@ -21,8 +21,8 @@ import pickle
 
 parser = argparse.ArgumentParser(description='TRPO.')
 # these parameters should stay the same
-parser.add_argument("task", type=str)
-parser.add_argument("expert_rollouts_path", type=str)
+parser.add_argument("task", type=str, default='Hopper-v2')
+parser.add_argument("expert_rollouts_path", type=str, default= '/path/to/experts/mujoco/expert_rollouts_Hopper-v1.pickle')
 parser.add_argument("--num_expert_rollouts", type=int, default=10)
 parser.add_argument("--timesteps_per_batch", type=int, default=25000)
 parser.add_argument("--n_iters", type=int, default=750)

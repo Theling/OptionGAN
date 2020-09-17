@@ -29,7 +29,7 @@ class Actor(multiprocessing.Process):
         self.result_q = result_q
         self.args = args
         self.monitor = monitor
-        self.policy = policy.create_dupe()
+        self.policy = policy.create_dupe() # create a duplicate policy
 
     def run(self):
         self.env = gym.make(self.args.task)

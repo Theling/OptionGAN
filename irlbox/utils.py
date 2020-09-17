@@ -50,7 +50,7 @@ def load_expert_rollouts(filepath, max_traj_len = -1, num_expert_rollouts = 10):
     expert_rollouts = expert_rollouts[:min(len(expert_rollouts), num_expert_rollouts)]
 
     if max_traj_len > 0:
-        expert_rollouts = [shorten_tensor_dict(x, traj_len) for x in expert_rollouts]
+        expert_rollouts = [shorten_tensor_dict(x, max_traj_len) for x in expert_rollouts]
 
     # TODO: change this to logging
     logger.log("Average reward for expert rollouts: %f" % np.mean([np.sum(p['rewards']) for p in expert_rollouts]))
