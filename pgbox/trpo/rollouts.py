@@ -130,6 +130,7 @@ class Actor(multiprocessing.Process):
             actions.append(action)
             infos.append(info)
             ob, reward, done, info = self.env.step(action)
+            self.env.render()
             raw_rewards.append(reward)
             rewards.append(reward)
             if done:

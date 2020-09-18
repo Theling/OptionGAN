@@ -220,15 +220,15 @@ class PPO(multiprocessing.Process):
 
         feed_dict.update(self.policy.get_extra_inputs(self.session, obs_n, paths_concated["info"]))
         feed_dict.update({self.learning_rate_multiplier : cur_lrmult})
-        if isinstance(self.vf, MLPConstrainedValueFunction):
-            feed_dict.update(self.vf.get_feed_vals(paths, self.session))
+        # if isinstance(self.vf, MLPConstrainedValueFunction):
+        #     feed_dict.update(self.vf.get_feed_vals(paths, self.session))
 
         if not isinstance(self.vf, MLPConstrainedValueFunction):
             self.vf.fit(paths, self.session)
 
-        if hasattr(self.policy, "ob_rms") and not isinstance(self.policy, GatedGaussianMLPPolicy):
-            # In the case of a GatedGaussian policy, we're going to share the gate/filter provided to us
-            self.policy.ob_rms.update(obs_n, self.session)
+        # if hasattr(self.policy, "ob_rms") and not isinstance(self.policy, GatedGaussianMLPPolicy):
+        #     # In the case of a GatedGaussian policy, we're going to share the gate/filter provided to us
+        #     self.policy.ob_rms.update(obs_n, self.session)
 
 
         losses = []

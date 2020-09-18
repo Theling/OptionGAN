@@ -84,7 +84,7 @@ class ParallelAlgo(object):
             logger.log("CumulativeEpisodes: %d" % self.total_episodes)
             logger.log("CumulativeTimesteps: %d" % self.total_timesteps)
 
-            paths = paths_processor(paths)
+            paths = paths_processor(paths) # reward is processed here.
 
 
             # Why is the learner in an async process?

@@ -17,7 +17,7 @@ class MLPDiscriminator(object):
                  scope="discriminator",
                  normalize_obs=False,
                  ent_reg_weight=0.0,
-                 gradient_penalty_weight=0.0,
+                #  gradient_penalty_weight=0.0,
                  l2_penalty_weight=0.001,
                  objective="regular",
                  use_rms_filter=False,
@@ -104,30 +104,30 @@ class MLPDiscriminator(object):
             self.l2_loss = loss_l2
             self.loss += loss_l2
 
-        if gradient_penalty_weight > 0.0:
-            batch_size = tf.shape(self.obs)[0]
-            smallest = tf.minimum(num_experts, batch_size-num_experts)
+        # if gradient_penalty_weight > 0.0:
+        #     batch_size = tf.shape(self.obs)[0]
+        #     smallest = tf.minimum(num_experts, batch_size-num_experts)
 
-            alpha = tf.random_uniform(
-                shape=[smallest,1],
-                minval=0.,
-                maxval=1.
-            )
+        #     alpha = tf.random_uniform(
+        #         shape=[smallest,1],
+        #         minval=0.,
+        #         maxval=1.
+        #     )
 
-            alpha_in = alpha*self.obs[-smallest:]
-            beta_in = ((1-alpha)*self.obs[:smallest])
-            interpolates = alpha_in + beta_in
-            net2 = interpolates
-            with tf.variable_scope(scope, reuse=True):
-                for i, x in enumerate(hidden_sizes):
-                    net2 = tf.layers.dense(inputs=net2, units=x, activation=tf.tanh, kernel_initializer= tf.random_uniform_initializer(-0.05, 0.05), name="discriminator_h%d"%i)
-                net2 = tf.layers.dense(inputs=net2, units=1, activation=None, kernel_initializer= tf.random_uniform_initializer(-0.05, 0.05), name="discriminator_outlayer")
+        #     alpha_in = alpha*self.obs[-smallest:]
+        #     beta_in = ((1-alpha)*self.obs[:smallest])
+        #     interpolates = alpha_in + beta_in
+        #     net2 = interpolates
+        #     with tf.variable_scope(scope, reuse=True):
+        #         for i, x in enumerate(hidden_sizes):
+        #             net2 = tf.layers.dense(inputs=net2, units=x, activation=tf.tanh, kernel_initializer= tf.random_uniform_initializer(-0.05, 0.05), name="discriminator_h%d"%i)
+        #         net2 = tf.layers.dense(inputs=net2, units=1, activation=None, kernel_initializer= tf.random_uniform_initializer(-0.05, 0.05), name="discriminator_outlayer")
 
-            gradients = tf.gradients(net2, [interpolates])[0]
-            gradients = tf.clip_by_value(gradients, -10., 10.)
-            slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
-            gradient_penalty = gradient_penalty_weight * tf.reduce_mean((slopes-1)**2)
-            self.loss += gradient_penalty
+        #     gradients = tf.gradients(net2, [interpolates])[0]
+        #     gradients = tf.clip_by_value(gradients, -10., 10.)
+        #     slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
+        #     gradient_penalty = gradient_penalty_weight * tf.reduce_mean((slopes-1)**2)
+        #     self.loss += gradient_penalty
 
         self.train_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.loss)
         comparison = tf.less(self.pred, tf.constant(0.5) )
