@@ -1,16 +1,9 @@
 import numpy as np
 import tensorflow as tf
 import gym
-try:
-    import gym_extensions
-except:
-    print("no gym extensions")
-# try:
-#     import roboschool
-# except:
-#     print("no roboschool")
+
 from pgbox.utils import *
-from pgbox.trpo.model import *
+# from pgbox.trpo.model import *
 import argparse
 from pgbox.trpo.rollouts import *
 import json
@@ -22,6 +15,8 @@ from irlbox.discriminators.mlp_discriminator import MLPDiscriminator
 from pgbox.valuefunctions.nn_vf import *
 
 from pgbox.sampling_utils import apply_transformers
+
+import joblib
 
 
 parser = argparse.ArgumentParser(description='TRPO.')
@@ -50,14 +45,14 @@ parser.add_argument("--d_l2_penalty_weight", default=0.0, type=float)
 args = parser.parse_args()
 
 # logger.add_text_output(args.log_dir + "debug.log")
-# logger.add_tabular_output(args.log_dir + "progress.csv")
+logger.add_tabular_output(args.log_dir + "progress.csv")
 
 learner_env = gym.make(args.task)
 
 expert_rollouts = load_expert_rollouts(args.expert_rollouts_path, max_traj_len = -1, num_expert_rollouts = args.num_expert_rollouts)
 
-
 args.transformers = None
+
 
 print("Using discriminator of size")
 print(args.discriminator_size)
@@ -68,7 +63,6 @@ baseline = MLPValueFunction(learner_env, hidden_sizes=args.policy_size, activati
 print(args.use_ppo)
 
 trpo = ParallelTRPO(learner_env, policy, args, vf=baseline)
-
 discriminator = MLPDiscriminator(learner_env.observation_space.shape[0], hidden_sizes=args.discriminator_size, activation=tf.nn.tanh, learning_rate=args.discriminator_lr, l2_penalty_weight=args.d_l2_penalty_weight)
 
 trainer = ParallelTrainer(trpo, expert_rollouts, discriminator, policy, args)
@@ -76,5 +70,10 @@ trainer = ParallelTrainer(trpo, expert_rollouts, discriminator, policy, args)
 iterations = 0
 while iterations <= args.n_iters:
     iterations = trainer.step()
-
+    joblib.dump(trpo.policy_weights, os.path.join('./logs/', f'param_{iterations}.pkl'))
 trainer.end()
+
+#'pol_dupe_5/policy_h0/kernel:0', 'pol_dupe_5/policy_h0/bias:0', 
+# 'pol_dupe_5/policy_h1/kernel:0', 'pol_dupe_5/policy_h1/bias:0', 
+# 'pol_dupe_5/policy_outlayer/kernel:0', 'pol_dupe_5/policy_outlayer/bias:0', 
+# 'pol_dupe_5/policy_logstd_kernel:0']

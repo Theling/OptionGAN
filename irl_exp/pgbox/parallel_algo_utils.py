@@ -84,7 +84,7 @@ class ParallelAlgo(object):
             logger.log("CumulativeEpisodes: %d" % self.total_episodes)
             logger.log("CumulativeTimesteps: %d" % self.total_timesteps)
 
-            paths = paths_processor(paths) # reward from discriminator is replaced in this function
+            paths = paths_processor(paths) # reward is processed here.
 
 
             # Why is the learner in an async process?
@@ -131,7 +131,7 @@ class ParallelAlgo(object):
             self.iteration += 1
             logger.log("%d total steps have happened" % self.totalsteps)
 
-            self.rollouts.set_policy_weights(new_policy_weights) # Update weights for each process
+            self.rollouts.set_policy_weights(new_policy_weights)
             self.policy_weights = new_policy_weights
 
             logger.dump_tabular(with_prefix=False)
