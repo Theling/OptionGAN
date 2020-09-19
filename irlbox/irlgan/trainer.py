@@ -57,8 +57,8 @@ class ParallelTrainer(object):
         observations = np.concatenate([observations, useful_expert_rollouts], axis=0)
         if hasattr(self.discriminator, "ob_rms"): self.discriminator.ob_rms.update(observations, self.discriminator.session) # update running mean/std for policy
 
-        labels = np.zeros((len(observations),))# label expert observation seq as 0
-        labels[novice_section:] = 1.0 #label novice observation seq as 1
+        labels = np.zeros((len(observations),))# label novice observation seq as 0
+        labels[novice_section:] = 1.0 #label expert observation seq as 1
         labels = labels.reshape((-1, 1))
 
         #observations, labels = shuffle(observations, labels)

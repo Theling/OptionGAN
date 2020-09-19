@@ -32,16 +32,15 @@ args = parser.parse_args()
 # logger.add_tabular_output(args.log_dir + "progress.csv")
 
 num_rollouts = 10
-
-with tf.Session() as sess:
-
-    env = gym.make(args.task)
+env = gym.make(args.task)
+def one_rollout(sess, env, file_):
+    
     max_steps =  env.spec.timestep_limit
     print(max_steps)
     policy = GaussianMLPPolicy(env, hidden_sizes=args.policy_size, activation=tf.nn.tanh)
     tf_util.initialize()
-    policy_params = joblib.load('./logs/param_90.pkl')
-    print([x.name for x in policy.get_params()])
+    policy_params = joblib.load(file_)
+    # print([x.name for x in policy.get_params()])
     policy.set_param_values(sess, policy_params)
     
     ret = []
@@ -76,9 +75,18 @@ with tf.Session() as sess:
         ret.append({'observations': np.array(observations),
                     'actions': np.array(actions),
                     'rewards': np.array(rewards),
-                    'mean_return': np.mean(returns)})
+                    'mean_return': np.mean(returns), 
+                    'std_return': np.std(returns) })
     returns  = [ele['mean_return'] for ele in ret]
     print('returns', returns)
     print('mean return', np.mean(returns))
     print('std of return', np.std(returns))
+    return ret
+
+results = []
+with tf.Session() as sess:
+    for i in range(1, 115, 2):
+        results.append(one_rollout(sess, env, file_= f'./logs/exp2/param_{i}.pkl'))
+
+joblib.dump(results, './logs/exp2/results.pkl')
 

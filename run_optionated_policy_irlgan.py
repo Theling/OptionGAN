@@ -21,8 +21,8 @@ import pickle
 
 parser = argparse.ArgumentParser(description='TRPO.')
 # these parameters should stay the same
-parser.add_argument("task", type=str, default='Hopper-v2')
-parser.add_argument("expert_rollouts_path", type=str, default= '/path/to/experts/mujoco/expert_rollouts_Hopper-v1.pickle')
+parser.add_argument("--task", type=str, default='Hopper-v2')
+parser.add_argument("--expert_rollouts_path", type=str, default= './data/Hopper-v2_data_10_rollouts.pkl')
 parser.add_argument("--num_expert_rollouts", type=int, default=10)
 parser.add_argument("--timesteps_per_batch", type=int, default=25000)
 parser.add_argument("--n_iters", type=int, default=750)
@@ -61,32 +61,21 @@ print(args)
 
 args.activation = activation_map[args.activation]
 
-logger.add_text_output(args.log_dir + "debug.log")
-logger.add_tabular_output(args.log_dir + "progress.csv")
+# logger.add_text_output(args.log_dir + "debug.log")
+# logger.add_tabular_output(args.log_dir + "progress.csv")
 
 learner_env = gym.make(args.task)
 
 expert_rollouts = load_expert_rollouts(args.expert_rollouts_path, max_traj_len = -1, num_expert_rollouts = args.num_expert_rollouts)
 
-if args.concat_prev_timestep:
-    from pgbox.sampling_utils import apply_transformers
-    transformers = [
-        gym_extensions.wrappers.transformers.AppendPrevTimeStepTransformer()]
-    learner_env = gym_extensions.wrappers.observation_transform_wrapper.ObservationTransformWrapper(
-        learner_env, transformers)
-    apply_transformers(expert_rollouts, transformers)
-    args.transformers = transformers
-else:
-    args.transformers = None
+args.transformers = None
 
 policy = GatedGaussianMLPPolicy(learner_env, hidden_sizes=args.policy_size, activation=args.activation, gate_hidden_sizes=args.gate_size, num_options=args.num_options)
 
 baseline = MLPValueFunction(learner_env, hidden_sizes=args.policy_size, activation=tf.nn.tanh)
 
-if args.use_ppo:
-    trpo = ParallelPPO(learner_env, policy, args, vf=baseline)
-else:
-    trpo = ParallelTRPO(learner_env, policy, args, vf=baseline)
+
+trpo = ParallelTRPO(learner_env, policy, args, vf=baseline)
 
 discriminator = OptionatedMLPDiscriminator(learner_env.observation_space.shape[0],
                                            hidden_sizes=args.discriminator_size,
@@ -112,36 +101,36 @@ while iterations <= args.n_iters:
     iterations = trainer.step()
 trainer.end()
 
-if True:
-    with tf.Session() as session:
-        sample_id = 0
-        sample_ids = []
-        learner_env.reset()
-        policy.set_param_values(session, trpo.policy_weights)
-        path = rollout(learner_env, policy, 2000, session, collect_images=True)
-        images = path.pop('images')
-        for image, obs in zip(images, path["observations"]):
-            scipy.misc.imsave('./images/sample_%d.png' % sample_id, image)
-            sample_ids.append(sample_id)
-            sample_id += 1
-        path["sampled_ids"] = sample_ids
-        with open("data.pickle", "wb") as output_file:
-            pickle.dump(path, output_file)
 
-        print("Path activations:")
-        print(path["info"]["gate_dist"])
+with tf.Session() as session:
+    sample_id = 0
+    sample_ids = []
+    learner_env.reset()
+    policy.set_param_values(session, trpo.policy_weights)
+    path = rollout(learner_env, policy, 2000, session, collect_images=True)
+    images = path.pop('images')
+    for image, obs in zip(images, path["observations"]):
+        scipy.misc.imsave('./images/sample_%d.png' % sample_id, image)
+        sample_ids.append(sample_id)
+        sample_id += 1
+    path["sampled_ids"] = sample_ids
+    with open("data.pickle", "wb") as output_file:
+        pickle.dump(path, output_file)
 
-        ave_gating_activations_per_rollout = []
-        for path in expert_rollouts:
-            gating_activations = []
-            for step in path["observations"]:
-                act, info = policy.act(step, session)
-                gating_activations.append(info["gate_dist"])
-            ave_gating_activations_per_rollout.append(np.mean(np.vstack(gating_activations), axis=0))
+    print("Path activations:")
+    print(path["info"]["gate_dist"])
 
-        print("gating activations per rollout")
-        for i, x in enumerate(ave_gating_activations_per_rollout):
-            print(i)
-            print(x)
-        with open("gating_activations_per_rollout.pickle", "wb") as output_file:
-            pickle.dump(ave_gating_activations_per_rollout, output_file)
+    ave_gating_activations_per_rollout = []
+    for path in expert_rollouts:
+        gating_activations = []
+        for step in path["observations"]:
+            act, info = policy.act(step, session)
+            gating_activations.append(info["gate_dist"])
+        ave_gating_activations_per_rollout.append(np.mean(np.vstack(gating_activations), axis=0))
+
+    print("gating activations per rollout")
+    for i, x in enumerate(ave_gating_activations_per_rollout):
+        print(i)
+        print(x)
+    with open("gating_activations_per_rollout.pickle", "wb") as output_file:
+        pickle.dump(ave_gating_activations_per_rollout, output_file)

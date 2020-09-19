@@ -79,7 +79,8 @@ class GatedGaussianMLPPolicy(object):
             else:
                 net_input = self.obs
 
-            # TODO: this is a hack right now that requires the gate to be the same, so we need to fix this to be properly passed a network and make a local copy.
+            # TODO: this is a hack right now that requires the gate to be the same, so we need to 
+            # fix this to be properly passed a network and make a local copy.
             with tf.variable_scope("gate", reuse=reuse):
                 gating_network = net_input
                 for i, x in enumerate(gate_hidden_sizes):

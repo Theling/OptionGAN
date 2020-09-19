@@ -68,12 +68,7 @@ discriminator = MLPDiscriminator(learner_env.observation_space.shape[0], hidden_
 trainer = ParallelTrainer(trpo, expert_rollouts, discriminator, policy, args)
 
 iterations = 0
-while iterations <= args.n_iters:
+while iterations <= 115:
     iterations = trainer.step()
     joblib.dump(trpo.policy_weights, os.path.join('./logs/', f'param_{iterations}.pkl'))
 trainer.end()
-
-#'pol_dupe_5/policy_h0/kernel:0', 'pol_dupe_5/policy_h0/bias:0', 
-# 'pol_dupe_5/policy_h1/kernel:0', 'pol_dupe_5/policy_h1/bias:0', 
-# 'pol_dupe_5/policy_outlayer/kernel:0', 'pol_dupe_5/policy_outlayer/bias:0', 
-# 'pol_dupe_5/policy_logstd_kernel:0']
