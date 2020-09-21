@@ -24,8 +24,10 @@ parser = argparse.ArgumentParser(description='TRPO.')
 # these parameters should stay the same
 parser.add_argument("--task", type=str, default='Hopper-v2')
 parser.add_argument("--expert_rollouts_path", type=str, default='./data/Hopper-v2_data_10_rollouts.pkl')
-parser.add_argument("--policy_size", nargs="+", default=(128,128), type=int)
-
+parser.add_argument("--num_options", default=2, type=int)
+parser.add_argument("--policy_size", nargs="+", default=(64,64), type=int)
+parser.add_argument("--gate_size", nargs="+", default=(32,32), type=int)
+parser.add_argument("--activation", type=str, default="tanh")
 args = parser.parse_args()
 
 # logger.add_text_output(args.log_dir + "debug.log")
@@ -33,11 +35,11 @@ args = parser.parse_args()
 
 num_rollouts = 10
 env = gym.make(args.task)
-def one_rollout(sess, env, file_):
+def one_rollout(sess, env, policy, file_):
     
     max_steps =  env.spec.timestep_limit
     print(max_steps)
-    policy = GaussianMLPPolicy(env, hidden_sizes=args.policy_size, activation=tf.nn.tanh)
+    
     tf_util.initialize()
     policy_params = joblib.load(file_)
     # print([x.name for x in policy.get_params()])
@@ -83,12 +85,11 @@ def one_rollout(sess, env, file_):
     print('std of return', np.std(returns))
     return ret
 
-# results = []
-# with tf.Session() as sess:
-#     for i in range(1, 115, 2):
-#         results.append(one_rollout(sess, env, file_= f'./logs/exp2/param_{i}.pkl'))
-
-# joblib.dump(results, './logs/exp2/results.pkl')
+results = []
 with tf.Session() as sess:
-    one_rollout(sess, env, file_= f'./logs/exp2/param_{110}.pkl')
+    policy = GatedGaussianMLPPolicy(env, hidden_sizes=args.policy_size, activation=args.activation, gate_hidden_sizes=args.gate_size, num_options=args.num_options)
+    for i in range(1, 300, 3):
+        results.append(one_rollout(sess, env, policy,  file_= f'./logs/exp3/param_{i}.pkl'))
+
+joblib.dump(results, './logs/exp3/results.pkl')
 

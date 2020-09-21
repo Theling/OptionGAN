@@ -1,19 +1,15 @@
 import numpy as np
 import tensorflow as tf
 import gym
-import gym_extensions
-# from gym_extensions.wrappers.normalized_env import normalize
 from pgbox.utils import *
 from pgbox.trpo.model import *
 import argparse
 from pgbox.trpo.rollouts import *
-import json
 from pgbox.parallel_algo_utils import *
 from pgbox.policies.gated_gaussian_mlp_policy import *
 from irlbox.utils import load_expert_rollouts
 from irlbox.irlgan.trainer import ParallelTrainer
 from irlbox.discriminators.mlp_gated_discriminator import OptionatedMLPDiscriminator
-# import roboschool
 from pgbox.valuefunctions.nn_vf import *
 from pgbox.sampling_utils import rollout
 import pickle
@@ -30,7 +26,7 @@ parser.add_argument("--n_iters", type=int, default=750)
 parser.add_argument("--gamma", type=float, default=.995)
 parser.add_argument("--max_kl", type=float, default=.01)
 parser.add_argument("--cg_damping", type=float, default=1e-1)
-parser.add_argument("--num_threads", type=int, default=2)
+parser.add_argument("--num_threads", type=int, default=5)
 parser.add_argument("--monitor", type=bool, default=False)
 parser.add_argument("--lam", type=float, default=.97)
 parser.add_argument("--use_reward_filter", action="store_true", help="Turn of default of original TRPO code.")
@@ -63,7 +59,7 @@ print(args)
 args.activation = activation_map[args.activation]
 
 # logger.add_text_output(args.log_dir + "debug.log")
-# logger.add_tabular_output(args.log_dir + "progress.csv")
+logger.add_tabular_output(args.log_dir + "progress.csv")
 
 learner_env = gym.make(args.task)
 
@@ -104,35 +100,35 @@ while iterations <= args.n_iters:
 trainer.end()
 
 
-with tf.Session() as session:
-    sample_id = 0
-    sample_ids = []
-    learner_env.reset()
-    policy.set_param_values(session, trpo.policy_weights)
-    path = rollout(learner_env, policy, 2000, session, collect_images=True)
-    images = path.pop('images')
-    for image, obs in zip(images, path["observations"]):
-        scipy.misc.imsave('./images/sample_%d.png' % sample_id, image)
-        sample_ids.append(sample_id)
-        sample_id += 1
-    path["sampled_ids"] = sample_ids
-    with open("data.pickle", "wb") as output_file:
-        pickle.dump(path, output_file)
+# with tf.Session() as session:
+#     sample_id = 0
+#     sample_ids = []
+#     learner_env.reset()
+#     policy.set_param_values(session, trpo.policy_weights)
+#     path = rollout(learner_env, policy, 2000, session, collect_images=True)
+#     images = path.pop('images')
+#     for image, obs in zip(images, path["observations"]):
+#         scipy.misc.imsave('./images/sample_%d.png' % sample_id, image)
+#         sample_ids.append(sample_id)
+#         sample_id += 1
+#     path["sampled_ids"] = sample_ids
+#     with open("data.pickle", "wb") as output_file:
+#         pickle.dump(path, output_file)
 
-    print("Path activations:")
-    print(path["info"]["gate_dist"])
+#     print("Path activations:")
+#     print(path["info"]["gate_dist"])
 
-    ave_gating_activations_per_rollout = []
-    for path in expert_rollouts:
-        gating_activations = []
-        for step in path["observations"]:
-            act, info = policy.act(step, session)
-            gating_activations.append(info["gate_dist"])
-        ave_gating_activations_per_rollout.append(np.mean(np.vstack(gating_activations), axis=0))
+#     ave_gating_activations_per_rollout = []
+#     for path in expert_rollouts:
+#         gating_activations = []
+#         for step in path["observations"]:
+#             act, info = policy.act(step, session)
+#             gating_activations.append(info["gate_dist"])
+#         ave_gating_activations_per_rollout.append(np.mean(np.vstack(gating_activations), axis=0))
 
-    print("gating activations per rollout")
-    for i, x in enumerate(ave_gating_activations_per_rollout):
-        print(i)
-        print(x)
-    with open("gating_activations_per_rollout.pickle", "wb") as output_file:
-        pickle.dump(ave_gating_activations_per_rollout, output_file)
+#     print("gating activations per rollout")
+#     for i, x in enumerate(ave_gating_activations_per_rollout):
+#         print(i)
+#         print(x)
+#     with open("gating_activations_per_rollout.pickle", "wb") as output_file:
+#         pickle.dump(ave_gating_activations_per_rollout, output_file)
